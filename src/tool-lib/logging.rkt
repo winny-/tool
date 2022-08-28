@@ -6,63 +6,37 @@
          ansi-color
          dirname)
 
-(provide panic err warn info debug *log-level* logging-to-console)
+(provide panic err warn info debug *log-level* call-with-logging-to-console)
 
 (define-logger tool #:parent #f)
 
 (define finished-logging-panic (make-channel))
 
-#;
+
 (define-syntax (define-logger stx)
   (syntax-parse stx
-    [(_ name:id log-level:id) #'(define-logger name log-level (void))]
+    [(_ name:id log-level:id)
+     #'(define-logger name log-level (void))]
     [(_ name:id log-level:id after:expr)
-     #`(define-syntax (name this-stx)
-         (syntax-parse this-stx
-           [(_ fmt:string args ...)
-            #'(begin
-                (log-message tool-logger name (format fmt args ...) #,(syntax-srcloc this-stx))
-                after)]))]))
+     #'(...
+        (define-syntax (name this-stx)
+          (syntax-parse this-stx
+            [(_ fmt:string args:expr ...)
+             #`(begin
+                 (log-message tool-logger
+                              'log-level
+                              (format fmt args ...)
+                              #,(syntax-srcloc this-stx))
+                 after)])))]))
 
-
-(define-syntax panic
-  (λ (stx)
-    (syntax-parse stx
-      [(_ fmt:string args ...)
-       #`(begin
-           (log-message tool-logger 'fatal (format fmt args ...) #,(syntax-srcloc stx))
-           (sync finished-logging-panic) ; Wait for log handler to finish before terminating.
-           (exit 1))])))
-
-
-
-(define-syntax err
-  (λ (stx)
-    (syntax-parse stx
-      [(_ fmt:string args ...)
-       #`(begin
-           (log-message tool-logger 'error (format fmt args ...) #,(syntax-srcloc stx)))])))
-
-(define-syntax warn
-  (λ (stx)
-    (syntax-parse stx
-      [(_ fmt:string args ...)
-       #`(begin
-           (log-message tool-logger 'warning (format fmt args ...) #,(syntax-srcloc stx)))])))
-
-(define-syntax info
-  (λ (stx)
-    (syntax-parse stx
-      [(_ fmt:string args ...)
-       #`(begin
-           (log-message tool-logger 'info (format fmt args ...) #,(syntax-srcloc stx)))])))
-
-(define-syntax debug
-  (λ (stx)
-    (syntax-parse stx
-      [(_ fmt:string args ...)
-       #`(begin
-           (log-message tool-logger 'debug (format fmt args ...) #,(syntax-srcloc stx)))])))
+(define-logger panic fatal
+  (begin
+    (sync finished-logging-panic) ; Wait for log handler to finish before terminating.
+    (exit 1)))
+(define-logger err error)
+(define-logger warn warning)
+(define-logger info info)
+(define-logger debug debug)
 
 (define colors `#hasheq((fatal . (black red))
                         (error . (red))
@@ -72,7 +46,7 @@
 
 (define *log-level* (make-parameter 'info))
 
-(define (logging-to-console proc)
+(define (call-with-logging-to-console proc)
   (with-intercepted-logging
     (λ (vec)
       (match-define (vector log-level msg loc sym) vec)
@@ -111,6 +85,4 @@
 
 (module+ main
   ;; (*log-level* 'debug)
-  (logging-to-console func))
-
-
+  (call-with-logging-to-console func))
