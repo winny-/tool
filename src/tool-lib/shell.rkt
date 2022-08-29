@@ -1,17 +1,15 @@
-#lang racket
+#lang racket/base
 
-(require racket/pretty
-         racket/hash
-         racket/os
-         racket/logging
+(require racket/format
+         racket/function
+         racket/list
+         racket/match
+         racket/port
+         racket/string
 
-         basedir
-         dirname
          shell/pipeline
-         ansi-color
 
-         "logging.rkt"
-         "values.rkt")
+         "logging.rkt")
 
 (provide $ $/string ~ // ./ (struct-out exn:shell) raise-shell-error pipeline->string)
 

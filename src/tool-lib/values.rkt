@@ -1,14 +1,21 @@
-#lang racket
+#lang racket/base
 
 (provide [except-out (all-defined-out)
                      define-values-getter])
 
-(require (for-syntax syntax/parse racket))
+(require (for-syntax racket
+                     syntax/parse
+                     threading)
+         racket/list)
 
 (define-syntax (define-values-getter stx)
   (syntax-parse stx
     [(_ name:id)
-     (with-syntax ([binding (datum->syntax stx (string->symbol (format "values-~a" (syntax-e #'name))))])
+     (with-syntax ([binding (~>> #'name
+                                 syntax-e
+                                 (format "values-~a")
+                                 string->symbol
+                                 (datum->syntax stx))])
        #'(define-syntax (binding this-stx)
            (syntax-parse this-stx
              [(_ val:expr)

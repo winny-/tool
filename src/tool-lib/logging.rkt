@@ -1,8 +1,19 @@
-#lang racket
+#lang racket/base
 
-(require racket/logging
+(require (for-syntax racket/syntax-srcloc
+                     syntax/parse
+                     racket/base)
+         racket/bool
+         racket/contract/base
+         racket/contract/region
          racket/date
-         (for-syntax syntax/parse racket/syntax-srcloc racket/syntax)
+         racket/format
+         racket/function
+         racket/list
+         racket/logging
+         racket/match
+         racket/string
+
          ansi-color
          dirname
 

@@ -3,4 +3,5 @@
 (define collection "tool")
 (define deps '("base"
                "dirname"
-               "ansi-color"))
+               "ansi-color"
+               "threading-lib"))

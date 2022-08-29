@@ -1,7 +1,7 @@
-#lang racket
+#lang racket/base
 
-(require (rename-in ffi/unsafe [-> ffi->])
-         ffi/unsafe/define)
+(require ffi/unsafe/define
+         (rename-in ffi/unsafe (-> ffi->)))
 
 (provide (all-defined-out))
 
