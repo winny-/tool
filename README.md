@@ -14,19 +14,23 @@
 - Colors by default
 - Show exact source location where the log call was made.
 - Show time & hide the topic
+- Error handler that logs to the same loggers.  (HACK - Racket doesn't seem to
+  support this directly.)
 - Simpler API:
+  + Just run `(tool-init!)` or `(tool-init-logging!)` on startup to attach loggers.
   + `panic`, `err`, `warn`, `info`, `debug` syntaxes correspond to sending a
     log line with the `fatal`, `error`, `warning`, `info`, `debug` log-levels.
     Usage: `(info "some message string on Racket ~a" (version))`.  Note must
     always contain a format string.  There is no shorthand.  This is
     intentional.
   + `panic` also causes racket to exit with a failure code.¤
-  + `call-with-logging-to-console` logs all messages made with this logger to
-    stderr.  It takes a zero-arity procedure (thunk) and runs it with logging
-    set up.  This uses tool-specific parameter `*log-level*` to determine which
-    log levels to print logs for.
+  + A different Racket thread logs all messages made with this logger.  By
+    default (e.g. initializing with `(tool-init!)`) messages are logged only to
+    stderr.  Try `(tool-init! #:logger (list log-to-syslog))` to log to syslog
+    instead.  All logging to this logger uses the tool-specific parameter
+    `*log-level*` to determine which log levels to print logs for.
 
-See <./src/tool-examples/examples/logging.rkt>.
+See [`./src/tool-examples/examples/logging.rkt`](./src/tool-examples/examples/logging.rkt).
 
 ### Shell
 
