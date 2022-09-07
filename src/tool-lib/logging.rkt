@@ -79,7 +79,7 @@
 (define-global *log-show-topic* #f)
 (define-global *log-level* 'info)
 
-(define log-vector? (vector/c log-level/c string? (or/c #f symbol?) any/c))
+(define log-vector? (vector/c log-level/c string? any/c (or/c #f symbol?)))
 
 (define/contract (make-log-vector #:log-level log-level
                          #:message message
@@ -179,7 +179,8 @@
                              (string-append padding line)))
                    "\n")])))
 
-(define (handle-log-message vec)
+(define/contract (handle-log-message vec)
+  (log-vector? . -> . void?)
   (match-define (vector log-level msg loc sym) vec)
   (dispatch-actions log-level (format-logline vec))
   (when (symbol=? log-level 'fatal)
