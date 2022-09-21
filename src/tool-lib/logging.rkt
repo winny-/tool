@@ -54,6 +54,7 @@
 (define-logger debug debug)
 
 (define levels '(fatal error warning info debug))
+(define (tool-log-level? e) (and (member e levels) #t))
 (define colors `#hasheq((fatal . (black red))
                         (error . (red))
                         (warning . (yellow))
@@ -68,16 +69,19 @@
 (define-syntax (define-global stx)
   (syntax-parse stx
     [(_ name:id init-e:expr)
+     #'(define-global name init-e any/c)]
+    [(_ name:id init-e:expr contract:expr)
      #'(begin
-         (define binding (box init-e))
+         (define/contract binding (box/c contract) (box init-e))
          (define (name . args)
            (match args
              [(list) (unbox binding)]
-             [(list v) (set-box! binding v)])))]))
+             [(list v)
+              (set-box! binding v)])))]))
 (define-global *log-show-filename* #t)
 (define-global *log-show-date* #t)
 (define-global *log-show-topic* #f)
-(define-global *log-level* 'info)
+(define-global *log-level* 'info tool-log-level?)
 
 (define log-vector? (vector/c log-level/c string? any/c (or/c #f symbol?)))
 
@@ -197,18 +201,20 @@
 
 (define original-error-display-handler (error-display-handler))
 
-(define (tool-init-logging! [configuration #t])
-  (match configuration
-    [#t (tool-init-logging! (list log-to-stderr))]
-    [(list _ ...)
-     (set! actions configuration)
-     (error-display-handler my-error-display-handler)
-     (poke)]
-    [(or (list) #f)
-     (error-display-handler original-error-display-handler)
-     (set! actions empty)
-     (when (thread-running? logging-thread)
-       (kill-thread logging-thread))]))
+(define-syntax (tool-deinit-logging! stx)
+  (syntax/loc stx
+    #'(begin
+        (error-display-handler original-error-display-handler)
+        (set! actions empty)
+        (when (thread-running? logging-thread)
+          (kill-thread logging-thread)))))
+
+(define DEFAULT-ACTIONS (list log-to-stderr))
+
+(define (tool-init-logging! #:actions [new-actions DEFAULT-ACTIONS])
+  (set! actions new-actions)
+  (error-display-handler my-error-display-handler)
+  (poke))
 
 
 (define (log-to-syslog log-level logline)

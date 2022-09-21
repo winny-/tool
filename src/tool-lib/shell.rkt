@@ -36,7 +36,6 @@
 (define ($ #:input [input-port #f]
            #:output [output-port (current-output-port)]
            #:error [error-port (current-error-port)]
-           #:raise? [raise? #t]
            . pipeline)
   (debug
    "$ ~a"
@@ -46,29 +45,27 @@
     (apply run-subprocess-pipeline
            pipeline
            #:in (or input-port null-redirect)
-           #:out output-port
-           #:err (or error-port stdout-redirect)))
-  (when raise?
-    (define statuses (pipeline-status/list execution))
-    (match (filter (negate zero?) statuses)
-      [(list) (void)]
-      [(list _ ... )
-       (raise-shell-error #:codes statuses #:pipeline pipeline
-                          "pipeline \"~a\" failed with ~v"
-                          (pipeline->string pipeline)
-                          (match statuses
-                            [(list code) code]
-                            [many many]))]))
+           #:out (or output-port null-redirect)
+           #:err (or error-port stdout-redirect)
+           #:strictness 'strict))
+  ;; Raise an exception if there was a command failure.
+  (define statuses (pipeline-status/list execution))
+  (match (filter (negate zero?) statuses)
+    [(list) (void)]
+    [(list _ ... )
+     (raise-shell-error #:codes statuses #:pipeline pipeline
+                        "pipeline \"~a\" failed with ~v"
+                        (pipeline->string pipeline)
+                        (match statuses
+                          [(list code) code]
+                          [many many]))])
   execution)
 
-(define ($/string #:raise? [raise? #t] #:error [error-port (current-output-port)] . pipeline)
-  (define execution #f)
-  (define s
-    (string-trim
-     (call-with-output-string
-      (λ (out)
-        (set! execution (apply $ pipeline #:raise? raise? #:output out #:error error-port))))))
-  (values execution s))
+(define ($/string #:error [error-port (current-output-port)] . pipeline)
+  (string-trim
+   (call-with-output-string
+    (λ (out)
+      (apply $ pipeline #:output out #:error error-port)))))
 
 (define (~ . elems)
   (apply build-path (expand-user-path "~") (map ~a elems)))
