@@ -1,3 +1,5 @@
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
 # tool - Opinionated framework for writing tools in Racket
 
 ## Features
