@@ -1,4 +1,4 @@
-#lang debug super racket
+#lang racket
 
 (require (for-syntax syntax/parse racket/string racket/syntax)
          syntax/parse racket/string
